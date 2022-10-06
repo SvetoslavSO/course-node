@@ -60,7 +60,7 @@ function sorter(src) {
           createDir(config.dist, () => {
             const fileName = path.basename(currentPath)
             const firstLetter = fileName.slice(0, 1)
-            const innerPath = path.resolve(config.dist, firstLetter)
+            const innerPath = path.resolve(config.dist, firstLetter.toUpperCase())
             createDir(innerPath, () => {
               fs.copyFile(currentPath, path.resolve(innerPath, fileName), (err) => {
                 if (err) throw err
