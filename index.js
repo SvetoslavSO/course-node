@@ -42,22 +42,22 @@ function getCurrentDate () {
 let tick = 0;
 
 const server = http.createServer((req, res) => {
-  const tickNumber = Math.floor(process.env.TIMEOUT / process.env.INTERVAL) - 1
-  console.log(tickNumber)
-  const currentInterval = setInterval(() => {
-    if(tick <= tickNumber){
-      tick = tick + 1;
-      let currentDate = getCurrentDate()
-      console.log(currentDate)
-    }
-  }, process.env.INTERVAL)
-  const currentTimeout = setTimeout(() => {
-    let currentDate = getCurrentDate()
-    clearInterval(currentInterval);
-    clearTimeout(currentTimeout)
-    res.end(currentDate)
-  }, process.env.TIMEOUT)
   if(req.method === 'GET') {
+    const tickNumber = Math.floor(process.env.TIMEOUT / process.env.INTERVAL) - 1
+    console.log(tickNumber)
+    const currentInterval = setInterval(() => {
+      if(tick <= tickNumber){
+        tick = tick + 1;
+        let currentDate = getCurrentDate()
+        console.log(currentDate)
+      }
+    }, process.env.INTERVAL)
+    const currentTimeout = setTimeout(() => {
+      let currentDate = getCurrentDate()
+      clearInterval(currentInterval);
+      clearTimeout(currentTimeout)
+      res.end(currentDate)
+    }, process.env.TIMEOUT)
     currentInterval;
     currentTimeout
   }
