@@ -1,31 +1,6 @@
 const http = require('http')
-const yargs = require('yargs')
-
-const args = yargs
-  .usage('Usage: node $0 [options]')
-  .help('help')
-  .alias('help', 'h')
-  .version('1.0.0')
-  .alias('version', 'v')
-  .option('interval', {
-    alias: 'i',
-    describe: 'interval time',
-    default: '2000'
-  })
-  .option('timeout', {
-    alias: 't',
-    describe: 'timeout time',
-    default: '20000'
-  })
-  .argv
-
-const config = {
-  interval: args.interval,
-  timeout: args.timeout
-}
-
-process.env.INTERVAL = config.interval;
-process.env.TIMEOUT = config.timeout;
+const dotenv = require('dotenv')
+dotenv.config({path: './config.env'})
 
 function getCurrentDate () {
   let today = new Date()
@@ -44,9 +19,8 @@ let tick = 0;
 const server = http.createServer((req, res) => {
   if(req.method === 'GET') {
     const tickNumber = Math.floor(process.env.TIMEOUT / process.env.INTERVAL) - 1
-    console.log(tickNumber)
     const currentInterval = setInterval(() => {
-      if(tick <= tickNumber){
+      if(tick < tickNumber){
         tick = tick + 1;
         let currentDate = getCurrentDate()
         console.log(currentDate)
