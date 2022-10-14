@@ -1,6 +1,6 @@
 const yargs = require('yargs')
 const path = require('path')
-const fs = require('fs')
+const {mkdir, readdir, stats, copyFile} = require('./modules/fs')
 
 const args = yargs
   .usage('Usage: node $0 [options]')
@@ -32,19 +32,34 @@ const config = {
   isDelete: args.delete
 }
 
-function createDir(src, cb) {
-  fs.access(src, (err) => {
-    if(err) {
-      fs.mkdir(src, (err) => {
-        if(err) throw err
-        cb()
-      })
+async function sorterPromise(src){
+  const files = await readdir(src)
+
+  for (const file of files) {
+    const currentPath = path.resolve(src, file)
+    const stat = await stats(currentPath)
+    if (stat.isDirectory()) {
+      await sorterPromise(currentPath)
+    } else {
+      const fileName = path.basename(currentPath)
+      const firstLetter = fileName.slice(0, 1)
+      const innerPath = path.resolve(config.dist, firstLetter.toUpperCase())
+      await mkdir(config.dist)
+      await mkdir(innerPath)
+      await copyFile(currentPath, path.resolve(innerPath, fileName))
+      console.log(currentPath)
     }
-    else {
-      cb()
-    }
-  })
+  }
 }
+
+(async function(){
+  try {
+    await sorterPromise(config.entry)
+    console.log('end')
+  } catch (error) {
+    console.log(error)
+  }
+}())
 
 function sorter(src) {
   fs.readdir(src, (err, files) => {
@@ -72,5 +87,3 @@ function sorter(src) {
     })
   })
 }
-
-sorter(config.entry)
