@@ -5,11 +5,10 @@ const content = require('../data.json')
 const fs = require('fs')
 
 router.get('/', (req, res, next) => {
-  res.render('pages/index', { title: 'Main page', products, skills })
+  res.render('pages/index', { title: 'Main page', msgemail: req.flash('main')[0], products, skills })
 })
 
 router.post('/', (req, res, next) => {
-  // TODO: Реализовать функционал отправки письма.
   const letter = {
     name: req.body.name,
     email: req.body.email,
@@ -22,7 +21,8 @@ router.post('/', (req, res, next) => {
     content.letters.push(letter)
   }
   fs.writeFileSync('data.json', JSON.stringify(content))
-  res.send('Письмо отправлено')
+  req.flash('main', 'Сообщение отправлено')
+  return res.redirect('/')
 })
 
 module.exports = router

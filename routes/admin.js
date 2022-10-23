@@ -8,20 +8,15 @@ let content = require('../data.json')
 const { join } = require('path')
 
 router.get('/', (req, res, next) => {
-  // TODO: Реализовать, подстановку в поля ввода формы 'Счетчики'
-  // актуальных значений из сохраненых (по желанию)
-  res.render('pages/admin', { title: 'Admin page' })
+  if (!req.session.auth) {
+    req.flash('login', 'Сессия Истекла!')
+
+    return res.redirect('/login')
+  }
+  res.render('pages/admin', { title: 'Admin page', msgskill: req.flash('admin')[0] })
 })
 
 router.post('/skills', (req, res, next) => {
-  /*
-  TODO: Реализовать сохранение нового объекта со значениями блока скиллов
-
-    в переменной age - Возраст начала занятий на скрипке
-    в переменной concerts - Концертов отыграл
-    в переменной cities - Максимальное число городов в туре
-    в переменной years - Лет на сцене в качестве скрипача
-  */
   const array = [
     req.body.age,
     req.body.concerts,
@@ -30,7 +25,8 @@ router.post('/skills', (req, res, next) => {
   ]
   for(const i of array){
     if(i === ''){
-      res.send('Не заполнены все поля')
+      req.flash('admin', 'Не заполнены все поля!')
+      return res.redirect('/admin/skills')
     }
   }
   let arrayIterator = 0
@@ -40,7 +36,26 @@ router.post('/skills', (req, res, next) => {
   }
   console.log(content.skills)
   fs.writeFileSync('data.json', JSON.stringify(content))
-  res.send('Скиллы сохранены')
+  req.flash('admin', 'Скиллы сохранены!')
+  return res.redirect('/admin/skills')
+})
+
+router.get('/skills', (req, res, next) => {
+  if (!req.session.auth) {
+    req.flash('login', 'Сессия Истекла!')
+
+    return res.redirect('/login')
+  }
+  res.render('pages/admin', { title: 'Admin page', msgskill: req.flash('admin')[0] })
+})
+
+router.get('/upload', (req, res, next) => {
+  if (!req.session.auth) {
+    req.flash('login', 'Сессия Истекла!')
+
+    return res.redirect('/login')
+  }
+  res.render('pages/admin', { title: 'Admin page', msgfile: req.flash('admin')[0] })
 })
 
 router.post('/upload', (req, res, next) => {
@@ -58,9 +73,12 @@ router.post('/upload', (req, res, next) => {
     const valid = validation(fields, files)
 
     if(valid.err) {
-      fs.unlinkSync(files.photo.path)
-      return res.redirect(`/?msg=${valid.status}`)
-    }
+      //console.log(files.photo)
+      fs.unlinkSync(files.photo.filepath)
+      
+      req.flash('admin', `${valid.status}`)
+      return res.redirect('/admin/upload')
+    } 
 
     const filename = path.join(upload, `Work${numberOfFiles+1}${path.extname(files.photo.originalFilename)}`)
     
@@ -82,19 +100,14 @@ router.post('/upload', (req, res, next) => {
 
       fs.writeFileSync('data.json', JSON.stringify(content))
 
+      req.flash('admin', 'Картинка добавлена')
+      return res.redirect('/admin/upload')
     })
   })
-  /* TODO:
-   Реализовать сохранения объекта товара на стороне сервера с картинкой товара и описанием
-    в переменной photo - Картинка товара
-    в переменной name - Название товара
-    в переменной price - Цена товара
-    На текущий момент эта информация хранится в файле data.json  в массиве products
-  */
-  res.send('Товар сохранён')
 })
 
 const validation = (fields, files) => {
+  console.lof(files)
   if (files.photo.name === '' || files.photo.size === 0) {
     return { status: 'Не загружена картинка!', err: true }
   }

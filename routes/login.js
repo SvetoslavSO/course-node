@@ -1,23 +1,39 @@
 const express = require('express')
 const router = express.Router()
-
-const user = {
-  email: 'validMail@mail.com',
-  password: '123123'
-}
+const auth = require('../services/auth')
 
 router.get('/', (req, res, next) => {
-  res.render('pages/login', { title: 'SigIn page' })
+  if (req.session.auth) {
+    return res.redirect('/admin')
+  }
+
+  res.render('pages/login', { title: 'SigIn page', msglogin: req.flash('login')[0] })
 })
 
 router.post('/', (req, res, next) => {
-  // TODO: Реализовать функцию входа в админ панель по email и паролю
-  if(req.body.email === user.email && req.body.password === user.password) {
-    res.render('pages/admin', { title: 'Admin page' })
-  } else {
-    res.send('Неправильный логин или пароль')
+  const login = {
+    email: req.body.email,
+    password: req.body.password
   }
-  //res.send('Реализовать функцию входа по email и паролю')
+
+  auth.authorization(login, (err, status) => {
+    if (err) {
+      req.flash('login', err.message)
+
+      return res.redirect('/login')
+    }
+
+    console.log(status)
+
+    if (status.password && login.email === status.email) {
+      req.session.auth = true
+      res.redirect('/admin')
+    } else {
+      req.flash('login', 'Авторизация провалена')
+
+      return res.redirect('/login')
+    }
+  })
 })
 
 module.exports = router

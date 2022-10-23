@@ -2,10 +2,26 @@ const createError = require('http-errors')
 const express = require('express')
 const path = require('path')
 const logger = require('morgan')
+const flash = require('connect-flash')
+const session = require('express-session')
+const cookieParser = require('cookie-parser')
+const db = require('./model/db')
+const auth = require('./services/auth')
 
 const mainRouter = require('./routes/')
 
 const app = express()
+
+app.use(cookieParser())
+app.use(session({
+  secret: 'login',
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    maxAge: 60000
+  }
+}))
+app.use(flash())
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'))
@@ -40,4 +56,19 @@ app.use((err, req, res, next) => {
   res.render('error')
 })
 
-app.listen(3000, () => {})
+app.listen(3000, () => {
+  if (!db.get('user').value()) {
+    const user = {
+      email: process.env.EMAIL,
+      password: process.env.PASSWORD
+    }
+    
+    auth.registration(user, (err, status) => {
+      if (err) {
+        console.log(err.message)
+      }
+
+      console.log(status.message)
+    })
+  }
+})
