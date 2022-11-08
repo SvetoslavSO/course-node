@@ -3,7 +3,11 @@ const router = express.Router()
 const tokens = require('../auth/tokens')
 const passport = require('passport')
 const db = require('../models')
+const url = require('url');
 const helper = require('../helpers/serialize')
+const formidable = require('formidable')
+const path = require('path')
+const fs = require('fs')
 
 const auth = (req, res, next) => {
   passport.authenticate('jwt', { session: false }, (err, user, info) => {
@@ -70,33 +74,82 @@ router.post('/refresh-token', async (req, res) => {
   res.json({ ...data })
 })
 
-router
-  .get('/profile', auth, async (req, res) => {
-    const user = req.user
-    res.json({
-      ...helper.serializeUser(user),
-    })
-  })
-  .patch('/profile', auth, async (req, res) => {
-    console.log(`PATH: req.body: `)
-    console.log(req.body)
-    // TODO:
-    const user = req.user
-    res.json({
-      ...helper.serializeUser(user),
-    })
-  })
-
-router.get('/news', async(req, res) => {
-  let news = await db.getAllNews()
+router.get('/profile', auth, async (req, res) => {
+  const user = req.user
   res.json({
-    ...helper.serializeNews(news)
+    ...helper.serializeUser(user),
   })
 })
 
-router.get('/news/add', async(req, res) => {
-  console.log('router news/add get')
-  res.json({})
+router.patch('/profile', async(req, res) => {
+  const userByToken = await tokens.getUserByToken(req.headers.authorization)
+  const userId = userByToken._id  
+  let form = new formidable.IncomingForm()
+
+  form.parse(req,async function (err, fields, files) {
+    //console.log(process.env.DB)
+    const filename = path.join(process.cwd(), './upload', `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
+    fs.rename(files.avatar.filepath, filename, function(err) {
+      if(err) {
+        console.log(err)
+        return
+      }
+    })
+    //fs.rename(files.avatar.filepath, )
+
+    const data = {
+      id: userId,
+      firstName: fields.firstName,
+      middleName: fields.middleName,
+      surName: fields.surName,
+      oldPassword: fields.oldPassword,
+      newPassword: fields.newPassword,
+      avatar: filename
+    }
+    const user = await db.getUserByName(fields.surName)
+    if (user) {
+      return res.status(409).json({
+        message: `Пользователь ${fields.surName} существует`
+      })
+    }
+    if (!userByToken.validPassword(data.oldPassword)) {
+      return res.status(409).json({
+        message: `Неверный пароль`
+      })
+    }
+    try {
+      const newUser = await db.updateUser(data)
+      res.json(helper.serializeUser(newUser))
+    } catch (e) {
+      console.log(e)
+    }
+  })
+})
+
+router.delete('/users/:id', async(req, res) => {
+  await db.deleteUser(req.params.id)
+  const users = await db.getUsers()
+  res.json(helper.serializeUsers(users))
+})
+
+router.get('/news', async(req, res) => {
+  let news = await db.getAllNews()
+  res.json(helper.serializeNews(news))
+})
+
+router.patch('/news/:id', async(req, res) => {
+  const newNews = await db.getNewsById(req.params.id)
+  newNews.title = req.body.title
+  newNews.text = req.body.text
+  await db.updateNews(newNews)
+  const news = await db.getAllNews()
+  res.json(helper.serializeNews(news))
+})
+
+router.delete('/news/:id', async(req, res) => {
+  await db.deleteNews(req.params.id)
+  const news = await db.getAllNews()
+  res.json(helper.serializeNews(news))
 })
 
 router.post('/news', async(req, res) => {
@@ -105,53 +158,23 @@ router.post('/news', async(req, res) => {
   try {
     const newNews = await db.createNews(newsObj)
     let news = await db.getAllNews()
-    res.json({
-      ...helper.serializeNews(news)
-    })
+    res.json(helper.serializeNews(news))
   } catch (error) {
     console.log(error)
     res.status(500).json({ message: error.message })
   }
 })
 
-router.post('/news/add', async(req, res) => {
-  console.log('router news/add post')
-  res.json({})
+router.get('/users', async(req, res) => {
+  const users = await db.getUsers()
+  res.json(helper.serializeUsers(users))
 })
 
-// router.get('/news/add', async(req, res) => {
-//   console.log('here in news/add get')
-//   res.json({
-    
-//   })
-// })
-
-// router.post('/news/add', async(req, res) => {
-//   console.log('here in news/add post')
-//   console.log(req.body)
-//   try {
-//     const newNews = await db.createNews(req.body)
-//     res.json({
-//       ...helper.serializeNews(newNews)
-//     })
-//   } catch (error) {
-//     console.log(error)
-//     res.status(500).json({ message: error.message })
-//   }
-// })
-
-// router.post('news', async(req, res) => {
-//   console.log('here in news post')
-//   try {
-//     const newNews = await db.createNews(req.body)
-//     res.json({
-//       ...helper.serializeNews(newNews)
-//     })
-//   } catch (error) {
-//     console.log(error)
-//     res.status(500).json({ message: error.message })
-//   }
-// })
+router.patch('/users/:id/permission', async(req, res) => {
+  let user = await db.getUserById(req.params.id)
+  user.permission = req.body.permission
+  await db.updateUserPermissions(user)
+})
 
 module.exports = router
 

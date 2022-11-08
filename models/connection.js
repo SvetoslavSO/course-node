@@ -6,7 +6,6 @@ dotenv.config({path:  process.cwd() + '/.env'})
 
 
 const uri = `mongodb://127.0.0.1:27017`
-console.log(uri)
 
 mongoose.connect(uri, {
   useNewUrlParser: true,

@@ -1,7 +1,10 @@
 // const mongoose = require('mongoose')
 const User = require('./schemas/user')
 const News = require('./schemas/news')
+const Message = require('./schemas/message')
 const helper = require('../helpers/serialize')
+const bCrypt = require('bcryptjs')
+const fs = require('fs')
 
 const db = require('../models')
 
@@ -13,10 +16,6 @@ module.exports.getUserById = async (id) => {
 }
 module.exports.getUsers = async () => {
   return User.find()
-}
-
-module.exports.getAllNews = async() => {
-  return News.find()
 }
 
 module.exports.createUser = async (data) => {
@@ -36,13 +35,43 @@ module.exports.createUser = async (data) => {
   })
   newUser.setPassword(password)
   const user = await newUser.save()
-  console.log(user)
   return user
+}
+
+module.exports.updateUser = async (data) => {
+  const updatedUser = await User.findOneAndUpdate(
+  {
+     _id: data.id 
+  },
+  {
+    firstName: data.firstName,
+    surName: data.surName,
+    middleName: data.middleName,
+    image: data.avatar,
+    hash : bCrypt.hashSync(data.newPassword, bCrypt.genSaltSync(10), null)
+  },
+  {
+    new:true
+  })
+
+  // await updatedUser.setPassword(data.newPassword)
+  return updatedUser
+}
+
+module.exports.deleteUser = async(id) => {
+  return User.findOneAndDelete({_id: id})
+}
+
+module.exports.updateUserPermissions = async (user) => {
+  await User.findOneAndUpdate({ _id: user.id }, { permission: user.permission }, { new: true })
+}
+
+module.exports.getAllNews = async() => {
+  return News.find()
 }
 
 module.exports.createNews = async(data) => {
   const { text, title, user } = data
-  console.log(user._id)
   const newNews = new News({
     created_at: Date.now(),
     text: text,
@@ -58,4 +87,31 @@ module.exports.createNews = async(data) => {
   })
   const singleNews = await newNews.save()
   return singleNews
+}
+
+module.exports.getNewsById = async(id) => {
+  return News.findById({ _id: id })
+}
+
+module.exports.updateNews = async(news) => {
+  return News.findOneAndUpdate({ _id: news.id }, { text: news.text, title: news.title }, { new: true })
+}
+
+module.exports.deleteNews = async(id) => {
+  return News.findOneAndDelete({_id : id})
+}
+
+module.exports.getMessage = async (senderId, recipientId) => {
+  return Message.find({senderId, recipientId})
+}
+ 
+module.exports.createMessage = async ({ senderId, recipientId, text }) => {
+  const newMessage = new Message({
+    recipientId: recipientId,
+    senderId: senderId,
+    text: text,
+    date: Date.now()
+  })
+  const message = await newMessage.save()
+  return message
 }

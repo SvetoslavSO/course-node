@@ -14,7 +14,7 @@ const createTokens = async (user) => {
     },
     secret,
     {
-      expiresIn: '1m',
+      expiresIn: '5m',
     },
   )
 
@@ -24,7 +24,7 @@ const createTokens = async (user) => {
     },
     secret,
     {
-      expiresIn: '2m',
+      expiresIn: '2h',
     },
   )
 

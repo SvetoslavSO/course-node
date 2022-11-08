@@ -7,10 +7,11 @@ dotenv.config({path: '../.env'})
 const server = http.createServer(app)
 
 require('./models/connection')
+require('./socket.js')(server)
 
 
 app.use(express.json())
-app.use(express.urlencoded({ extended: false }))
+app.use(express.urlencoded({ extended: true }))
 
 app.use(function (_, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
@@ -47,6 +48,5 @@ server.listen(PORT, function () {
   console.log('Environment', process.env.NODE_ENV)
   console.log(`Server running. Use our API on port: ${PORT}`)
 })
-
 
 module.exports = { app: app, server: server }
