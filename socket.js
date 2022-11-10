@@ -1,4 +1,3 @@
-//const { server } = require('./server')
 const { createMessage } = require('./models')
 const helpers = require('./helpers/serialize')
 const db = require('./models')

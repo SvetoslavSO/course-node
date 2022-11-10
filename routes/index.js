@@ -17,7 +17,6 @@ const auth = (req, res, next) => {
         message: 'Unauthorized',
       })
     }
-    // TODO: check IP user
     req.user = user
     next()
   })(req, res, next)
@@ -29,7 +28,7 @@ router.post('/registration', async (req, res) => {
   if (user) {
     return res.status(409).json({
       message: `Пользователь ${username} существует`
-    }) // TODO:
+    })
   }
   try {
     const newUser = await db.createUser(req.body)
@@ -69,7 +68,6 @@ router.post('/login', async (req, res, next) => {
 
 router.post('/refresh-token', async (req, res) => {
   const refreshToken = req.headers['authorization']
-  // TODO: compare token from DB
   const data = await tokens.refreshTokens(refreshToken)
   res.json({ ...data })
 })
@@ -87,42 +85,70 @@ router.patch('/profile', async(req, res) => {
   let form = new formidable.IncomingForm()
 
   form.parse(req,async function (err, fields, files) {
-    //console.log(process.env.DB)
-    const filename = path.join(process.cwd(), './upload', `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
-    fs.rename(files.avatar.filepath, filename, function(err) {
-      if(err) {
-        console.log(err)
-        return
+    if (files) {
+      const filename = path.join(process.cwd(), './upload', `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
+      const filenameForDb = ('./upload', '/',  `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
+      fs.rename(files.avatar.filepath, filename, function(err) {
+        if(err) {
+          console.log(err)
+          return
+        }
+      })
+  
+      const data = {
+        id: userId,
+        firstName: fields.firstName,
+        middleName: fields.middleName,
+        surName: fields.surName,
+        oldPassword: fields.oldPassword,
+        newPassword: fields.newPassword,
+        avatar: filenameForDb
       }
-    })
-    //fs.rename(files.avatar.filepath, )
-
-    const data = {
-      id: userId,
-      firstName: fields.firstName,
-      middleName: fields.middleName,
-      surName: fields.surName,
-      oldPassword: fields.oldPassword,
-      newPassword: fields.newPassword,
-      avatar: filename
+      const user = await db.getUserByName(fields.surName)
+      if (user) {
+        return res.status(409).json({
+          message: `Пользователь ${fields.surName} существует`
+        })
+      }
+      if (!userByToken.validPassword(data.oldPassword)) {
+        return res.status(409).json({
+          message: `Неверный пароль`
+        })
+      }
+      try {
+        const newUser = await db.updateUser(data)
+        res.json(helper.serializeUser(newUser))
+      } catch (e) {
+        console.log(e)
+      }
+    } else {
+      const data = {
+        id: userId,
+        firstName: fields.firstName,
+        middleName: fields.middleName,
+        surName: fields.surName,
+        oldPassword: fields.oldPassword,
+        newPassword: fields.newPassword
+      }
+      const user = await db.getUserByName(fields.surName)
+      if (user) {
+        return res.status(409).json({
+          message: `Пользователь ${fields.surName} существует`
+        })
+      }
+      if (!userByToken.validPassword(data.oldPassword)) {
+        return res.status(409).json({
+          message: `Неверный пароль`
+        })
+      }
+      try {
+        const newUser = await db.updateUser(data)
+        res.json(helper.serializeUser(newUser))
+      } catch (e) {
+        console.log(e)
+      }
     }
-    const user = await db.getUserByName(fields.surName)
-    if (user) {
-      return res.status(409).json({
-        message: `Пользователь ${fields.surName} существует`
-      })
-    }
-    if (!userByToken.validPassword(data.oldPassword)) {
-      return res.status(409).json({
-        message: `Неверный пароль`
-      })
-    }
-    try {
-      const newUser = await db.updateUser(data)
-      res.json(helper.serializeUser(newUser))
-    } catch (e) {
-      console.log(e)
-    }
+    
   })
 })
 

@@ -11,13 +11,12 @@ const params = {
   jwtFromRequest: function (req) {
     let token = null
     if (req && req.headers) {
-      token = req.headers['authorization'] // req.get('authorization')
+      token = req.headers['authorization']
     }
     return token
   },
 }
 
-// LocalStrategy
 passport.use(
   new LocalStrategy(function (username, password, done) {
     User.findOne({ userName: username })
@@ -34,7 +33,6 @@ passport.use(
   }),
 )
 
-// JWT Strategy
 passport.use(
   new Strategy(params, function (payload, done) {
     User.findOne({ _id: payload.user.id })

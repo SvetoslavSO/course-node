@@ -1,4 +1,3 @@
-// const mongoose = require('mongoose')
 const User = require('./schemas/user')
 const News = require('./schemas/news')
 const Message = require('./schemas/message')
@@ -39,23 +38,41 @@ module.exports.createUser = async (data) => {
 }
 
 module.exports.updateUser = async (data) => {
-  const updatedUser = await User.findOneAndUpdate(
-  {
-     _id: data.id 
-  },
-  {
-    firstName: data.firstName,
-    surName: data.surName,
-    middleName: data.middleName,
-    image: data.avatar,
-    hash : bCrypt.hashSync(data.newPassword, bCrypt.genSaltSync(10), null)
-  },
-  {
-    new:true
-  })
+  if (data.avatar) {
+    const updatedUser = await User.findOneAndUpdate(
+      {
+         _id: data.id 
+      },
+      {
+        firstName: data.firstName,
+        surName: data.surName,
+        middleName: data.middleName,
+        image: data.avatar,
+        hash : bCrypt.hashSync(data.newPassword, bCrypt.genSaltSync(10), null)
+      },
+      {
+        new:true
+      })
+      
+    return updatedUser
+  } else {
+    const updatedUser = await User.findOneAndUpdate(
+      {
+         _id: data.id 
+      },
+      {
+        firstName: data.firstName,
+        surName: data.surName,
+        middleName: data.middleName,
+        hash : bCrypt.hashSync(data.newPassword, bCrypt.genSaltSync(10), null)
+      },
+      {
+        new:true
+      })
+    
+    return updatedUser
+  }
 
-  // await updatedUser.setPassword(data.newPassword)
-  return updatedUser
 }
 
 module.exports.deleteUser = async(id) => {
