@@ -87,7 +87,8 @@ router.patch('/profile', async(req, res) => {
   form.parse(req,async function (err, fields, files) {
     if (files.avatar) {
       const filename = path.join(process.cwd(), './upload', `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
-      const filenameForDb = ('./upload', '/',  `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
+      const filenameForDb = (`${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
+      console.log(filenameForDb)
       fs.rename(files.avatar.filepath, filename, function(err) {
         if(err) {
           console.log(err)
