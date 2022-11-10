@@ -85,7 +85,7 @@ router.patch('/profile', async(req, res) => {
   let form = new formidable.IncomingForm()
 
   form.parse(req,async function (err, fields, files) {
-    if (files) {
+    if (files.avatar) {
       const filename = path.join(process.cwd(), './upload', `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
       const filenameForDb = ('./upload', '/',  `${userByToken.userName}${path.extname(files.avatar.originalFilename)}`)
       fs.rename(files.avatar.filepath, filename, function(err) {
